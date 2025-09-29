@@ -72,9 +72,7 @@ abstract class AbstractEntityController extends Controller
         $entityClass = $this->service::getEntityClass();
 
         if (Yii::$app->request->isPost) {
-            $data = Yii::$app->request->post()[getObjectShortName($entityClass)];
-            $data = $this->modifyDataBeforeCreate($data);
-
+            $data = $this->loadAndModifyModel();
             $model = $this->service->create($data);
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -88,8 +86,7 @@ abstract class AbstractEntityController extends Controller
         $model = $this->findModel($id);
 
         if (Yii::$app->request->isPost) {
-            $model->load(Yii::$app->request->post());
-            $model = $this->modifyDataBeforeUpdate($model);
+            $model = $this->loadAndModifyModel($model);
             $this->service->update($model);
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -112,6 +109,19 @@ abstract class AbstractEntityController extends Controller
             throw new NotFoundHttpException(Yii::t('app', 'The requested page does not exist.'));
         }
         return $model;
+    }
+
+    private function loadAndModifyModel(?ActiveRecord $model = null): ActiveRecord|array
+    {
+        $entityClass = $this->service::getEntityClass();
+        $postData = Yii::$app->request->post()[getObjectShortName($entityClass)] ?? [];
+
+        if ($model === null) {
+            return $this->modifyDataBeforeCreate($postData);
+        }
+
+        $model->load(Yii::$app->request->post());
+        return $this->modifyDataBeforeUpdate($model);
     }
 
     protected function modifyDataBeforeCreate(array $data): array

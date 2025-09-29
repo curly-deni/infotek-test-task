@@ -30,7 +30,6 @@ class AuthorSubscriptionController extends Controller
                     [
                         'actions' => ['index', 'view', 'check', 'subscribe', 'unsubscribe'],
                         'allow' => true,
-                        // все могут подписываться и проверять
                     ],
                 ],
             ],
@@ -63,47 +62,43 @@ class AuthorSubscriptionController extends Controller
 
     public function actionSubscribe(int $id)
     {
-        $author = $this->findAuthor($id);
-        $userId = !Yii::$app->user->isGuest ? Yii::$app->user->id : null;
-        $phone = Yii::$app->request->post()['DynamicModel']['phone'];
-
-        try {
+        return $this->handleSubscriptionAction($id, function($author, $phone, $userId) {
             $this->service->subscribeByPhone($author, $phone, $userId);
-            Yii::$app->session->setFlash('success', 'You have successfully subscribed.');
-        } catch (\Throwable $e) {
-            Yii::$app->session->setFlash('error', 'Subscription failed: ' . $e->getMessage());
-        }
-
-        return $this->redirect(['view', 'id' => $id]);
+            return 'You have successfully subscribed.';
+        });
     }
 
     public function actionUnsubscribe(int $id)
     {
-        $author = $this->findAuthor($id);
-        $phone = Yii::$app->request->post()['DynamicModel']['phone'];
-
-        try {
+        return $this->handleSubscriptionAction($id, function($author, $phone) {
             $this->service->unsubscribeByPhone($author, $phone);
-            Yii::$app->session->setFlash('success', 'You have successfully unsubscribed.');
-        } catch (\Throwable $e) {
-            Yii::$app->session->setFlash('error', 'Unsubscription failed: ' . $e->getMessage());
-        }
-
-        return $this->redirect(['view', 'id' => $id]);
+            return 'You have successfully unsubscribed.';
+        });
     }
 
     public function actionCheck(int $id)
     {
+        return $this->handleSubscriptionAction($id, function($author, $phone, $userId) {
+            $isSubscribed = $this->service->isSubscribed($author, $phone, $userId);
+            return $isSubscribed
+                ? 'You are already subscribed to this author.'
+                : 'You are not subscribed to this author.';
+        }, 'info');
+    }
+
+    private function handleSubscriptionAction(int $id, callable $callback, string $flashType = 'success')
+    {
         $author = $this->findAuthor($id);
         $userId = !Yii::$app->user->isGuest ? Yii::$app->user->id : null;
-        $phone = Yii::$app->request->post()['DynamicModel']['phone'];
+        $phone = Yii::$app->request->post('DynamicModel')['phone'] ?? null;
 
-        $isSubscribed = $this->service->isSubscribed($author, $phone, $userId);
-        $message = $isSubscribed
-            ? 'You are already subscribed to this author.'
-            : 'You are not subscribed to this author.';
+        try {
+            $message = $callback($author, $phone, $userId);
+            Yii::$app->session->setFlash($flashType, $message);
+        } catch (\Throwable $e) {
+            Yii::$app->session->setFlash('error', 'Operation failed: ' . $e->getMessage());
+        }
 
-        Yii::$app->session->setFlash('info', $message);
         return $this->redirect(['view', 'id' => $id]);
     }
 
