@@ -1,0 +1,35 @@
+.env
+
+/web/assets
+
+# ide project files
+.idea
+.vscode
+nbproject
+.buildpath
+.project
+.settings
+
+# os files
+Thumbs.db
+.DS_Store
+
+# composer vendor dir
+/vendor
+
+# composer itself is not needed
+composer.phar
+
+# phpunit itself is not needed
+phpunit.phar
+# local phpunit config
+/phpunit.xml
+
+tests/_output/*
+tests/_support/_generated
+
+#vagrant folder
+/.vagrant
+
+supervisord.log
+supervisord.pid
