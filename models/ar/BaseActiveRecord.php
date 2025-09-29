@@ -8,6 +8,9 @@ use yii\db\ActiveQuery;
 
 abstract class BaseActiveRecord extends ActiveRecord
 {
+    /**
+     * @var bool — применять фильтр active по умолчанию
+     */
     protected const APPLY_ACTIVE_FILTER = false;
 
     public static function find(): ActiveQuery
@@ -21,20 +24,17 @@ abstract class BaseActiveRecord extends ActiveRecord
         return $query;
     }
 
-    public static function shouldApplyActiveFilter(): bool
+    protected static function shouldApplyActiveFilter(): bool
     {
         if (!static::APPLY_ACTIVE_FILTER) {
             return false;
         }
 
-        if (Yii::$app instanceof \yii\console\Application) {
+        if (Yii::$app instanceof \yii\console\Application || Yii::$app->user->isGuest) {
             return true;
         }
 
-        if (Yii::$app->user->isGuest) {
-            return true;
-        }
-
+        // Если явно разрешено показывать неактивные записи — фильтр не нужен
         return !(defined('UNACTIVE_RECORDS') && UNACTIVE_RECORDS);
     }
 

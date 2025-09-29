@@ -19,6 +19,7 @@ class UserService extends Component
         $user->status = UserAR::STATUS_ACTIVE;
 
         $this->checkBeforeEvent(ServiceUserEvent::BEFORE_REGISTER, $user);
+        $this->prepareForSave($user, true);
         $this->saveOrFail($user);
         $this->triggerEvent(ServiceUserEvent::AFTER_REGISTER, $user);
 
@@ -30,6 +31,7 @@ class UserService extends Component
         $this->checkBeforeEvent(ServiceUserEvent::BEFORE_PASSWORD_CHANGE, $user);
 
         $user->password = $newPassword;
+        $this->prepareForSave($user);
         $this->saveOrFail($user);
 
         $this->triggerEvent(ServiceUserEvent::AFTER_PASSWORD_CHANGE, $user);
@@ -58,6 +60,7 @@ class UserService extends Component
 
         $user->password = $newPassword;
         $user->password_reset_token = null;
+        $this->prepareForSave($user);
         $this->saveOrFail($user);
 
         $this->triggerEvent(ServiceUserEvent::AFTER_PASSWORD_RESET, $user);
@@ -88,6 +91,18 @@ class UserService extends Component
     public function validatePassword(UserAR $user, string $password): bool
     {
         return Yii::$app->security->validatePassword($password, $user->password_hash);
+    }
+
+    protected function prepareForSave(UserAR $user, bool $isNew = false): void
+    {
+        if (!empty($user->password)) {
+            $user->password_hash = Yii::$app->security->generatePasswordHash($user->password);
+            $user->password = null;
+        }
+
+        if ($isNew && empty($user->auth_key)) {
+            $user->auth_key = Yii::$app->security->generateRandomString();
+        }
     }
 
     protected function checkBeforeEvent(string $name, UserAR $user): void

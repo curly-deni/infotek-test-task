@@ -75,7 +75,6 @@ class BookService extends AbstractEntityService
         }
 
         if (!empty($authorIds)) {
-            $entity->unlinkAll('authors', true);
             $entity->linkAuthors($authorIds);
         }
 

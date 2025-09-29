@@ -56,13 +56,62 @@ class BookAR extends BaseActiveRecord
             ->viaTable('book_authors', ['book_id' => 'id']);
     }
 
+    public function linkAuthor(AuthorAR|int $author): void
+    {
+
+        $authorId = $author instanceof AuthorAR ? $author->id : $author;
+
+        $exists = (new \yii\db\Query())
+            ->from('book_authors')
+            ->where(['book_id' => $this->id, 'author_id' => $authorId])
+            ->exists();
+
+        if (!$exists) {
+            static::getDb()->createCommand()
+                ->insert('book_authors', [
+                    'book_id' => $this->id,
+                    'author_id' => $authorId,
+                ])->execute();
+        }
+    }
+
+    public function unlinkAuthor(AuthorAR|int $author): void
+    {
+
+        $authorId = $author instanceof AuthorAR ? $author->id : $author;
+
+        static::getDb()->createCommand()
+            ->delete('book_authors', [
+                'book_id' => $this->id,
+                'author_id' => $authorId,
+            ])->execute();
+    }
+
+
     public function linkAuthors(array $authorIds): void
     {
-        foreach ($authorIds as $authorId) {
-            $author = AuthorAR::findOne($authorId);
-            if ($author) {
-                $this->link('authors', $author);
-            }
+        $authorIds = array_unique($authorIds);
+
+        $existingIds = (new \yii\db\Query())
+            ->select('author_id')
+            ->from('book_authors')
+            ->where(['book_id' => $this->id])
+            ->column();
+
+        $toAdd = array_diff($authorIds, $existingIds);
+        $toRemove = array_diff($existingIds, $authorIds);
+
+        $db = static::getDb();
+
+        if (!empty($toAdd)) {
+            $rows = array_map(fn($authorId) => ['book_id' => $this->id, 'author_id' => $authorId], $toAdd);
+            $db->createCommand()->batchInsert('book_authors', ['book_id', 'author_id'], $rows)->execute();
+        }
+
+        if (!empty($toRemove)) {
+            $db->createCommand()
+                ->delete('book_authors', ['book_id' => $this->id, 'author_id' => $toRemove])
+                ->execute();
         }
     }
 }

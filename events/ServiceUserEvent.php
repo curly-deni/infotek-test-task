@@ -5,7 +5,7 @@ namespace app\events;
 use app\models\ar\UserAR;
 use yii\base\Event;
 
-class ServiceUserEvent extends Event
+class ServiceUserEvent extends ServiceEntityEvent
 {
     public UserAR $user;
 
@@ -30,6 +30,6 @@ class ServiceUserEvent extends Event
     public function __construct(UserAR $user)
     {
         $this->user = $user;
-        parent::__construct();
+        parent::__construct($user);
     }
 }

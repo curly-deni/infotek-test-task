@@ -81,20 +81,6 @@ class UserAR extends BaseActiveRecord
         ];
     }
 
-    public function beforeSave($insert)
-    {
-        if (parent::beforeSave($insert)) {
-            if (!empty($this->password)) {
-                $this->password_hash = \Yii::$app->security->generatePasswordHash($this->password);
-            }
-            if ($insert && empty($this->auth_key)) {
-                $this->auth_key = \Yii::$app->security->generateRandomString();
-            }
-            return true;
-        }
-        return false;
-    }
-
     public function getName(): string
     {
         return "{$this->first_name} {$this->last_name}";
