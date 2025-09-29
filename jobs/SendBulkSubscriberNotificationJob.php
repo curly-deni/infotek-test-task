@@ -44,7 +44,10 @@ class SendBulkSubscriberNotificationJob extends BaseObject implements JobInterfa
         );
 
         $authorsList = implode(', ', $authorNames);
-        $message = "Новая книга от авторов: {$authorsList}. Книга: {$book->title}";
+        $message = Yii::t('app', 'New book from authors: {authors}. Title: {title}', [
+            'authors' => $authorsList,
+            'title'   => $book->title,
+        ]);
 
         $ids = array_column($this->subscriberIds, 'id');
         $phones = SubscriberAR::find()

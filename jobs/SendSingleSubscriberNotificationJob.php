@@ -46,7 +46,10 @@ class SendSingleSubscriberNotificationJob extends BaseObject implements JobInter
         }
 
         $authorsList = implode(', ', $authorNames);
-        $message = "Новая книга от авторов, на которых вы подписаны: {$authorsList}. Книга: {$book->title}";
+        $message = Yii::t('app', 'New book from authors: {authors}. Title: {title}', [
+            'authors' => $authorsList,
+            'title' => $book->title,
+        ]);
 
         $notifier->send($subscriber->phone, $message);
     }
