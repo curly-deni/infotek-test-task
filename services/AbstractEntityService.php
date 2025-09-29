@@ -17,19 +17,23 @@ abstract class AbstractEntityService extends Component
 
     public function create(array $data): ActiveRecord
     {
+        $data = $this->beforeCreate($data);
+
         $entity = $this->initEntity($data, $this->createScenario);
 
         $this->checkBeforeEvent(ServiceEntityEvent::BEFORE_CREATE, $entity);
 
         $this->save($entity);
 
-        $this->triggerEvent(ServiceEntityEvent::AFTER_CREATE, $entity);
+        $this->afterCreate($entity);
 
         return $entity;
     }
 
     public function update(ActiveRecord $entity, array $data = []): ActiveRecord
     {
+        $data = $this->beforeUpdate($entity, $data);
+
         if (!empty($data)) {
             $entity->load($data, '');
         }
@@ -42,9 +46,29 @@ abstract class AbstractEntityService extends Component
 
         $this->save($entity);
 
-        $this->triggerEvent(ServiceEntityEvent::AFTER_UPDATE, $entity);
+        $this->afterUpdate($entity);
 
         return $entity;
+    }
+
+    protected function beforeCreate(array $data): array
+    {
+        return $data;
+    }
+
+    protected function afterCreate(ActiveRecord $entity): void
+    {
+
+    }
+
+    protected function beforeUpdate(ActiveRecord $entity, array $data): array
+    {
+        return $data;
+    }
+
+    protected function afterUpdate(ActiveRecord $entity): void
+    {
+
     }
 
     public function delete(ActiveRecord $entity): void
