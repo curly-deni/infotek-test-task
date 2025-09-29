@@ -11,36 +11,14 @@ class SendSubscribersChunkJob extends BaseObject implements JobInterface
     public array $subscriberIds;
     public int $bookId;
 
-    public bool $useSingleJob = false;
-    public bool $bulkChunk = false;
-    public int $bulkChunkSize = 15;
-
-    public function execute($queue)
+    public function execute($queue): void
     {
-        if ($this->useSingleJob) {
-            foreach ($this->subscriberIds as $subscriberId) {
-                Yii::$app->queue->push(new SendSingleSubscriberNotificationJob([
-                    'subscriberId' => $subscriberId['id'],
-                    'bookId' => $this->bookId,
-                ]));
-            }
-            return;
+        foreach ($this->subscriberIds as $subscriber) {
+            Yii::$app->queue->push(new SendSubscriberNotificationJob([
+                'subscriberId' => is_array($subscriber) ? $subscriber['id'] : $subscriber,
+                'bookId'       => $this->bookId,
+                'bulk'         => false,
+            ]));
         }
-
-        if ($this->bulkChunk) {
-            $chunks = array_chunk($this->subscriberIds, $this->bulkChunkSize);
-            foreach ($chunks as $chunk) {
-                Yii::$app->queue->push(new SendBulkSubscriberNotificationJob([
-                    'subscriberIds' => $chunk,
-                    'bookId' => $this->bookId,
-                ]));
-            }
-            return;
-        }
-
-        Yii::$app->queue->push(new SendBulkSubscriberNotificationJob([
-            'subscriberIds' => $this->subscriberIds,
-            'bookId' => $this->bookId,
-        ]));
     }
 }

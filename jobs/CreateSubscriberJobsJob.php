@@ -3,14 +3,17 @@
 namespace app\jobs;
 
 use app\models\ar\SubscriberAR;
+use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
 
 class CreateSubscriberJobsJob extends BaseObject implements JobInterface
 {
     public int $bookId;
-
     public int $chunkSize = 50;
+
+    /** @var bool — true = bulk режим, false = single режим */
+    public bool $bulk = true;
 
     public function execute($queue)
     {
@@ -21,16 +24,23 @@ class CreateSubscriberJobsJob extends BaseObject implements JobInterface
             ->where(['ba.book_id' => $this->bookId])
             ->select('s.id')
             ->distinct()
-            ->asArray()
-            ->all();
+            ->column();
 
-        \Yii::info($subscriberIds);
-
-        foreach (array_chunk($subscriberIds, $this->chunkSize) as $chunk) {
-            \Yii::$app->queue->push(new SendSubscribersChunkJob([
-                'subscriberIds' => $chunk,
-                'bookId' => $this->bookId,
-            ]));
+        if ($this->bulk) {
+            foreach (array_chunk($subscriberIds, $this->chunkSize) as $chunk) {
+                Yii::$app->queue->push(new SendSubscriberNotificationJob([
+                    'subscriberIds' => $chunk,
+                    'bookId'        => $this->bookId,
+                    'bulk'          => true,
+                ]));
+            }
+        } else {
+            foreach (array_chunk($subscriberIds, $this->chunkSize) as $chunk) {
+                Yii::$app->queue->push(new SendSubscribersChunkJob([
+                    'subscriberIds' => $chunk,
+                    'bookId'        => $this->bookId,
+                ]));
+            }
         }
     }
 }
